@@ -1,6 +1,9 @@
 import 'package:cours_dsia/models/option.dart';
+import 'package:cours_dsia/models/transaction.dart';
+import 'package:cours_dsia/screens/scan_screen.dart';
 import 'package:cours_dsia/utils/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,6 +15,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool isVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    setLocale();
+  }
+
+  setLocale() async {
+    await Jiffy.setLocale('fr_ca');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 2000,
+              height: 1000,
               child: Stack(
                 children: [
                   Container(
@@ -133,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 4),
                         shrinkWrap: true,
+                        physics: ClampingScrollPhysics(),
                         itemCount: Option.listOption.length,
                         itemBuilder: (context, index) {
                           Option o = Option.listOption[index];
@@ -144,7 +158,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 5,
                         thickness: 5,
                         color: Colors.grey.withValues(alpha: 0.2),
-                      )
+                      ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        physics: ClampingScrollPhysics(),
+                        itemCount: Transaction.transList.length,
+                        itemBuilder: (context, index) {
+                          Transaction t = Transaction.transList[index];
+                          return transWidget(
+                              title: t.title,
+                              amount: t.amount,
+                              date: t.date,
+                              type: t.type);
+                        },
+                      ),
                     ],
                   )
                 ],
@@ -157,60 +185,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget cardWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          height: 180,
-          width: 280,
-          decoration: BoxDecoration(
-              color: Colors.blue,
-              image: DecorationImage(
-                  image: AssetImage(bgCard),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                      Colors.white.withValues(alpha: .3), BlendMode.srcIn)),
-              borderRadius: BorderRadius.circular(15)),
-          child: Center(
-            child: Container(
-              width: 120,
-              height: 140,
-              padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-              decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(15)),
-              child: Column(
-                children: [
-                  SizedBox(
-                      height: 103,
-                      child: PrettyQrView.data(
-                        data: 'google.com',
-                        decoration: const PrettyQrDecoration(
-                          shape: PrettyQrSmoothSymbol(roundFactor: .1),
-                          quietZone: PrettyQrQuietZone.zero,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanScreen(),
+            ));
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: 180,
+            width: 280,
+            decoration: BoxDecoration(
+                color: Colors.blue,
+                image: DecorationImage(
+                    image: AssetImage(bgCard),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                        Colors.white.withValues(alpha: .3), BlendMode.srcIn)),
+                borderRadius: BorderRadius.circular(15)),
+            child: Center(
+              child: Container(
+                width: 120,
+                height: 140,
+                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15)),
+                child: Column(
+                  children: [
+                    SizedBox(
+                        height: 103,
+                        child: PrettyQrView.data(
+                          data: 'google.com',
+                          decoration: const PrettyQrDecoration(
+                            shape: PrettyQrSmoothSymbol(roundFactor: .1),
+                            quietZone: PrettyQrQuietZone.zero,
+                          ),
+                        )),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_rounded,
+                          size: 16,
                         ),
-                      )),
-                  SizedBox(
-                    height: 5,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.camera_alt_rounded,
-                        size: 16,
-                      ),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Text("Scanner")
-                    ],
-                  )
-                ],
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Text("Scanner")
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -239,4 +277,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+}
+
+Widget transWidget(
+    {required String title,
+    required int amount,
+    required DateTime date,
+    required TType type}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "${type == TType.envoi ? "À " : type == TType.reception ? "De " : ""}$title",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w500),
+            ),
+            Text(
+              "${type == TType.envoi || type == TType.paiement || type == TType.retrait ? "-" : ""}${amount}F",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w500),
+            )
+          ],
+        ),
+        Text(
+          Jiffy.parse(date.toString())
+              .format(pattern: "dd MMMM yyyy à HH:mm")
+              .toString(),
+          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+        ),
+      ],
+    ),
+  );
 }
