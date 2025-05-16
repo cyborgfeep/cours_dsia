@@ -37,6 +37,7 @@ dependencies:
   pretty_qr_code: ^3.4.0
   jiffy: ^6.4.3
   camera: ^0.11.1
+  toggle_switch: ^2.3.0
 
 dev_dependencies:
   flutter_test:

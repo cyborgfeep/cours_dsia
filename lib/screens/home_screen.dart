@@ -1,10 +1,11 @@
 import 'package:cours_dsia/models/option.dart';
 import 'package:cours_dsia/models/transaction.dart';
 import 'package:cours_dsia/screens/scan_screen.dart';
+import 'package:cours_dsia/screens/transaction_screen.dart';
 import 'package:cours_dsia/utils/constants.dart';
+import 'package:cours_dsia/widgets/card_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,7 +142,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Column(
                     children: [
-                      cardWidget(),
+                      CardWidget(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ScanScreen(),
+                              ));
+                        },
+                      ),
                       GridView.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 4),
@@ -151,7 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemBuilder: (context, index) {
                           Option o = Option.listOption[index];
                           return optionWidget(
-                              color: o.color, title: o.title, icon: o.icon);
+                              index: index,
+                              color: o.color,
+                              title: o.title,
+                              icon: o.icon);
                         },
                       ),
                       Divider(
@@ -184,97 +196,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget cardWidget() {
+  Widget optionWidget(
+      {required Color color,
+      required IconData icon,
+      required String title,
+      required index}) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ScanScreen(),
-            ));
+        if (index == 0 || index == 2) {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TransactionScreen(index: index),
+              ));
+        }
       },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
           Container(
-            height: 180,
-            width: 280,
             decoration: BoxDecoration(
-                color: Colors.blue,
-                image: DecorationImage(
-                    image: AssetImage(bgCard),
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                        Colors.white.withValues(alpha: .3), BlendMode.srcIn)),
-                borderRadius: BorderRadius.circular(15)),
-            child: Center(
-              child: Container(
-                width: 120,
-                height: 140,
-                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15)),
-                child: Column(
-                  children: [
-                    SizedBox(
-                        height: 103,
-                        child: PrettyQrView.data(
-                          data: 'google.com',
-                          decoration: const PrettyQrDecoration(
-                            shape: PrettyQrSmoothSymbol(roundFactor: .1),
-                            quietZone: PrettyQrQuietZone.zero,
-                          ),
-                        )),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.camera_alt_rounded,
-                          size: 16,
-                        ),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text("Scanner")
-                      ],
-                    )
-                  ],
-                ),
-              ),
+                color: color.withValues(alpha: .2),
+                borderRadius: BorderRadius.circular(45)),
+            padding: EdgeInsets.all(10),
+            child: Icon(
+              icon,
+              color: color,
+              size: 35,
             ),
           ),
+          SizedBox(
+            height: 5,
+          ),
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.w500),
+          )
         ],
       ),
-    );
-  }
-
-  Widget optionWidget(
-      {required Color color, required IconData icon, required String title}) {
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-              color: color.withValues(alpha: .2),
-              borderRadius: BorderRadius.circular(45)),
-          padding: EdgeInsets.all(10),
-          child: Icon(
-            icon,
-            color: color,
-            size: 35,
-          ),
-        ),
-        SizedBox(
-          height: 5,
-        ),
-        Text(
-          title,
-          style: TextStyle(fontWeight: FontWeight.w500),
-        )
-      ],
     );
   }
 }
