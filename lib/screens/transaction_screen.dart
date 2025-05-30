@@ -1,5 +1,8 @@
+import 'package:cours_dsia/models/fav_contact.dart';
+import 'package:cours_dsia/services/contact_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:sqflite/sqflite.dart';
 
 class TransactionScreen extends StatefulWidget {
   const TransactionScreen({super.key, required this.index});
@@ -12,11 +15,28 @@ class TransactionScreen extends StatefulWidget {
 
 class _TransactionScreenState extends State<TransactionScreen> {
   List<Contact> contactList = [];
+  List<FavContact> favContact = [];
+  ContactProvider provider = ContactProvider();
 
   @override
   void initState() {
     super.initState();
     getContacts();
+    initDatabase();
+  }
+
+  initDatabase() async {
+    var databasesPath = await getDatabasesPath();
+    String path = "$databasesPath/contact.db";
+    provider.open(path).then(
+      (value) {
+        provider.getAllContacts().then((value) {
+          setState(() {
+            favContact = value;
+          });
+        });
+      },
+    );
   }
 
   @override
@@ -71,6 +91,44 @@ class _TransactionScreenState extends State<TransactionScreen> {
               SizedBox(
                 height: 20,
               ),
+              favContact.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Favoris",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 22),
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: ClampingScrollPhysics(),
+                          itemCount: favContact.length,
+                          itemBuilder: (context, index) {
+                            FavContact c = favContact[index];
+                            return GestureDetector(
+                              onDoubleTap: () {
+                                provider.delete(c.id!);
+                                provider.getAllContacts().then((value) {
+                                  setState(() {
+                                    favContact = value;
+                                  });
+                                });
+                              },
+                              child: contactWidget(
+                                  name: c.name!, number: c.phone!),
+                            );
+                          },
+                        )
+                      ],
+                    )
+                  : SizedBox.shrink(),
+              SizedBox(
+                height: 10,
+              ),
               Text(
                 "Contacts",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
@@ -86,53 +144,42 @@ class _TransactionScreenState extends State<TransactionScreen> {
                   Contact c = contactList[index];
                   String number =
                       c.phones.first.normalizedNumber.replaceAll("+221", "");
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      children: [
-                        widget.index == 0
-                            ? Container(
-                                decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: .3),
-                                    borderRadius: BorderRadius.circular(45)),
-                                padding: EdgeInsets.all(8),
-                                child: Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
-                                ),
-                              )
-                            : Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(45),
-                                    color: number.startsWith("77") ||
-                                            number.startsWith("78")
-                                        ? Colors.orange
-                                        : number.startsWith("76")
-                                            ? Colors.blue.shade900
-                                            : Colors.yellow),
+                  return GestureDetector(
+                      onDoubleTap: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => AlertDialog(
+                            title: Text("Favoris"),
+                            content: Text(
+                                "Voulez-vous ajouter ce contact dans vos favoris?"),
+                            actions: [
+                              ElevatedButton(
+                                child: Text("Annuler"),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
                               ),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.displayName,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            Text(
-                              number,
-                              style: TextStyle(color: Colors.grey),
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  );
+                              ElevatedButton(
+                                child: Text("Ajouter"),
+                                onPressed: () {
+                                  FavContact fc = FavContact(
+                                      name: c.displayName, phone: number);
+                                  provider.insert(fc);
+                                  provider.getAllContacts().then((value) {
+                                    setState(() {
+                                      favContact = value;
+                                    });
+                                    Navigator.pop(context);
+                                  });
+                                },
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                      child:
+                          contactWidget(name: c.displayName, number: number));
                 },
               )
             ],
@@ -154,5 +201,53 @@ class _TransactionScreenState extends State<TransactionScreen> {
       setState(() {});
       print(contactList.length);
     }
+  }
+
+  Widget contactWidget({required String name, required String number}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          widget.index == 0
+              ? Container(
+                  decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: .3),
+                      borderRadius: BorderRadius.circular(45)),
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.person,
+                    color: Colors.grey,
+                  ),
+                )
+              : Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(45),
+                      color: number.startsWith("77") || number.startsWith("78")
+                          ? Colors.orange
+                          : number.startsWith("76")
+                              ? Colors.blue.shade900
+                              : Colors.yellow),
+                ),
+          SizedBox(
+            width: 10,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              Text(
+                number,
+                style: TextStyle(color: Colors.grey),
+              )
+            ],
+          )
+        ],
+      ),
+    );
   }
 }

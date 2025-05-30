@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? RichText(
                             text: TextSpan(children: [
                               TextSpan(
-                                  text: "100.000",
+                                  text: "1.000.000",
                                   style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 20,
